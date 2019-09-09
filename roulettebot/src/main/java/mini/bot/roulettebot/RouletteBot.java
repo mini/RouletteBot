@@ -41,7 +41,7 @@ public class RouletteBot extends ListenerAdapter {
 			System.exit(1);
 		}
 
-		buildJDA();
+		buildJDA(args[0]);
 		consoleLoop();
 	}
 
@@ -190,10 +190,10 @@ public class RouletteBot extends ListenerAdapter {
 		return invite;
 	}
 
-	private static JDA buildJDA() {
+	private static JDA buildJDA(String token) {
 		JDABuilder builder = null;
 		try {
-			builder = new JDABuilder(readToken());
+			builder = new JDABuilder(token);
 			RouletteBot bot = new RouletteBot();
 			builder.addEventListeners(bot);
 			JDA jda = builder.build();
@@ -206,14 +206,5 @@ public class RouletteBot extends ListenerAdapter {
 		return null;
 	}
 
-	private static String readToken() {
-		try {
-			return Files.readAllLines(Paths.get(RouletteBot.class.getResource("/token.txt").toURI())).get(1);
-		} catch (IOException | URISyntaxException e) {
-			System.err.println("Error reading token file");
-			e.printStackTrace();
-		}
-		return "Token not found";
-	}
 
 }
