@@ -7,7 +7,7 @@ public class Gun {
 	public volatile static boolean FORCE = false;
 	private static final Random rand = new Random();
 
-	private static final int SIZE = 8;
+	private static final int SIZE = 6;
 	private static AtomicInteger pulls = new AtomicInteger();
 	private static AtomicInteger fired = new AtomicInteger();
 	
