@@ -1,9 +1,5 @@
 package mini.bot.roulettebot;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -28,7 +24,7 @@ import net.dv8tion.jda.api.requests.restaction.InviteAction;
 
 public class RouletteBot extends ListenerAdapter {
 
-	private volatile static boolean kickEnabled = false;
+	private volatile static boolean kickEnabled = true;
 	private volatile static boolean masterEnable = true;
 
 	private static final Map<Guild, Invite> invitesForGuilds = new ConcurrentHashMap<>();
@@ -84,7 +80,7 @@ public class RouletteBot extends ListenerAdapter {
 						System.out.println("Uptime: " + (System.currentTimeMillis() - start) / 1000);
 						System.out.println("Pulls: " + Gun.getPulls() + " Fired: " + Gun.getFired());
 						System.out.println("Force death: " + Gun.FORCE);
-						System.out.println(invitesForGuilds.keySet());
+						System.out.println("Active guilds: " + invitesForGuilds.keySet());
 						System.out.println("Kicking " + (kickEnabled ? "enabled" : "disabled"));
 						System.out.println("Master " + (masterEnable ? "enabled" : "disabled"));
 						break;
@@ -155,8 +151,7 @@ public class RouletteBot extends ListenerAdapter {
 		String inviteLink = getInviteUrl(guild);
 		System.out.println(
 		        "Sending invite " + inviteLink + " to " + victim.getEffectiveName() + " Roles: " + victim.getRoles());
-		pmChannel.sendMessage(inviteLink).queue();
-
+		pmChannel.sendMessage(inviteLink).complete();
 		victim.kick("shot themselves").complete();
 	}
 
@@ -205,6 +200,4 @@ public class RouletteBot extends ListenerAdapter {
 		}
 		return null;
 	}
-
-
 }
