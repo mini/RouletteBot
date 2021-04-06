@@ -44,7 +44,7 @@ public class RouletteBot extends ListenerAdapter {
 	private static void consoleLoop() {
 		long start = System.currentTimeMillis();
 		try (Scanner input = new Scanner(System.in)) {
-			System.out.print("RouletteBot❯ ");
+			System.out.print("RouletteBot> ");
 			while (input.hasNextLine()) {
 				String cmd = input.nextLine();
 				switch (cmd.toLowerCase()) {
@@ -86,9 +86,10 @@ public class RouletteBot extends ListenerAdapter {
 						break;
 					default:
 						System.out.println("Unknown command");
+						System.out.println("(q)uit (f)orceDeath (l)istServers (k)ickToggle (e)nableToggle (s)tatus");
 						break;
 				}
-				System.out.print("RouletteBot❯ ");
+				System.out.print("RouletteBot> ");
 			}
 		}
 	}
