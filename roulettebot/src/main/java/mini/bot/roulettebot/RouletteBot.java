@@ -20,6 +20,7 @@ import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.requests.restaction.InviteAction;
 
 public class RouletteBot extends ListenerAdapter {
@@ -27,7 +28,6 @@ public class RouletteBot extends ListenerAdapter {
 	private volatile static boolean kickEnabled = true;
 	private volatile static boolean masterEnable = true;
 
-	private static final Map<Guild, Invite> invitesForGuilds = new ConcurrentHashMap<>();
 	private static final Map<Guild, Gun> gunsForGuilds = new ConcurrentHashMap<>();
 	private static final Map<Long, List<Role>> rolesForDead = new ConcurrentHashMap<>();
 
@@ -62,7 +62,7 @@ public class RouletteBot extends ListenerAdapter {
 					case "list":
 					case "ls":
 					case "l":
-						System.out.println(invitesForGuilds.keySet());
+						System.out.println(gunsForGuilds.keySet());
 						break;
 					case "kick":
 					case "k":
@@ -80,7 +80,7 @@ public class RouletteBot extends ListenerAdapter {
 						System.out.println("Uptime: " + (System.currentTimeMillis() - start) / 1000);
 						System.out.println("Pulls: " + Gun.getPulls() + " Fired: " + Gun.getFired());
 						System.out.println("Force death: " + Gun.FORCE);
-						System.out.println("Active guilds: " + invitesForGuilds.keySet());
+						System.out.println("Active guilds: " + gunsForGuilds.keySet());
 						System.out.println("Kicking " + (kickEnabled ? "enabled" : "disabled"));
 						System.out.println("Master " + (masterEnable ? "enabled" : "disabled"));
 						break;
@@ -111,6 +111,7 @@ public class RouletteBot extends ListenerAdapter {
 			for (Role role : roles) {
 				guild.addRoleToMember(member, role).queue();
 			}
+			System.out.println("Added " + roles.size() + " roles");
 		}
 	}
 
@@ -128,40 +129,32 @@ public class RouletteBot extends ListenerAdapter {
 
 		channel.sendMessage("Click").queue();
 
+		Member victim = event.getMember();
+		if (victim.isOwner()) {
+			System.out.println(victim.getEffectiveName() + " was server owner");
+			return;
+		}
+
 		Gun gun = getGun(guild);
 		if (!gun.fire()) {
 			return;
 		}
 
-		channel.sendMessage("Bang!").complete();
-
 		if (kickEnabled) {
-			kickUser(event.getMember(), guild);
+			channel.sendMessage("Bang!").complete();
+			kickUser(victim, guild);
 		}
 	}
 
 	private void kickUser(Member victim, Guild guild) {
-		if (victim.isOwner()) {
-			System.out.println(victim.getEffectiveName() + " was owner");
-			return;
-		}
-
 		rolesForDead.put(victim.getUser().getIdLong(), victim.getRoles());
 		PrivateChannel pmChannel = victim.getUser().openPrivateChannel().complete();
-		String inviteLink = getInviteUrl(guild);
-		System.out.println(
-		        "Sending invite " + inviteLink + " to " + victim.getEffectiveName() + " Roles: " + victim.getRoles());
+		String inviteLink = generateInvite(guild).getUrl();
+		System.out.println("Sending invite " + inviteLink + " to " + victim.getEffectiveName() + " Roles: " + victim.getRoles());
 		pmChannel.sendMessage(inviteLink).complete();
 		victim.kick("shot themselves").complete();
 	}
 
-	private String getInviteUrl(Guild guild) {
-		Invite invite = invitesForGuilds.get(guild);
-		if (invite == null) {
-			invite = generateInvite(guild);
-		}
-		return invite.getUrl();
-	}
 
 	private Gun getGun(Guild guild) {
 		if (!gunsForGuilds.containsKey(guild)) {
@@ -171,24 +164,17 @@ public class RouletteBot extends ListenerAdapter {
 	}
 
 	private Invite generateInvite(Guild guild) {
-		List<Invite> existing = guild.retrieveInvites().complete();
-		for (Invite i : existing) {
-			if (i.getInviter().getName().toLowerCase().contains("roulettebot")) {
-				i.delete().queue();
-			}
-		}
-
 		System.out.println("Making invite");
 		InviteAction action = guild.getDefaultChannel().createInvite();
-		Invite invite = action.setMaxAge(0).setMaxUses(0).setTemporary(false).complete();
-		invitesForGuilds.put(guild, invite);
+		Invite invite = action.setMaxAge(0).setMaxUses(1).setTemporary(false).complete();
 		return invite;
 	}
 
 	private static JDA buildJDA(String token) {
 		JDABuilder builder = null;
 		try {
-			builder = new JDABuilder(token);
+			builder = JDABuilder.createDefault(token);
+			builder.enableIntents(List.of(GatewayIntent.GUILD_MEMBERS));
 			RouletteBot bot = new RouletteBot();
 			builder.addEventListeners(bot);
 			JDA jda = builder.build();
